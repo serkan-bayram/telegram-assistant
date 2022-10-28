@@ -11,10 +11,10 @@ import datetime
 import pytz
 import random
 
-# THINGS THIS BOT CAN DO
-# Creating a vocabulary list translating, adding, deleting words, clearing list, showing words
+# THINGS THAT THIS BOT CAN DO
+# Creating a vocabulary list translating, adding, deleting words, cleaning list, showing words
 # Sending the menu of my school's cafeteria
-# Sends weather stats
+# Sends daily weather stats
 # To-Do stuff
 # Checks watchlist
 # Reminding things perioadically
