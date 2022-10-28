@@ -572,7 +572,7 @@ def drinkWater(context):
         bot.sendMessage(USER_ID, "Drink 1 glass of water.")
 
     # Stopping the function at 10pm
-    if now.hour == 22 and now.minute == 00:
+    if now.hour == 22 and now.minute < 30:
         bot.sendMessage(USER_ID, "Great! You drank 2 liters of water approximately. 🎉")
 
 # Repeating functions
