@@ -1,0 +1,40 @@
+{
+  "lessons": [
+    {
+      "day": "monday",
+      "schedule": [
+        "09-12: Olasılık (C112)",
+        "13-15: Nesne Tabanlı Programlama (L022)"
+      ]
+    },
+    {
+      "day": "tuesday",
+      "schedule": [
+        "09-10: Ölçme ve Donanım (L018)",
+        "10-12: Nesne Tabanlı Programlama (L022)"
+      ]
+    },
+    {
+      "day": "wednesday",
+      "schedule": [
+        "09-12: Devre Teorisi (C004)",
+        "13-15: Sayısal Tasarım (C112)",
+        "15-17: Teknik İngilizce (C112)"
+      ]
+    },
+    {
+      "day": "thursday",
+      "schedule": [
+        "10-12: Sayısal Tasarım (C112)",
+        "13-15: İnternet Programlama (C004)"
+      ]
+    },
+    {
+      "day": "friday",
+      "schedule": [
+        "10-12: İnternet Programlama (L022)",
+        "14-16: Mesleki İngilizce (C112)"
+      ]
+    }
+  ]
+}
