@@ -35,7 +35,7 @@ bot = telepot.Bot(TOKEN)
 # Use @userinfobot to find your user id
 # You need User Id to make bot personal
 with open("user_id.txt", "r") as f:
-    USER_ID = f.read()
+    USER_ID = int(f.read())
 
 # Your timezone
 timezone = 'Europe/Istanbul'
@@ -120,7 +120,8 @@ def menu(update, context):
                     pTags = get_information_for_menu()
                     for aTag in pTags:
                         try:
-                            if "menu" in aTag.a["href"]:
+                            print(aTag.a["href"])
+                            if "menu" in aTag.a["href"].lower():
                                 pdf = aTag.a["href"]
                         except:
                             continue
