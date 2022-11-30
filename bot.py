@@ -576,6 +576,81 @@ def drinkWater(context):
     if now.hour == 22 and now.minute < 30:
         bot.sendMessage(USER_ID, "Great! You drank 2 liters of water approximately. 🎉")
 
+
+#---ANNOUNCEMENT STUFF STARTS---
+
+# creating the announs.txt if it is not already created
+def check_if_file_exist(context, soup):
+    announs = []
+
+    if not os.path.exists("assets/announs.txt"):
+        for td in soup.find_all('td'):
+            announs.append(str(td))
+        
+        with open("assets/announs.txt", "w") as f:
+            f.writelines(announs)
+        
+        return False # if the file has created in here, there is no need to check is there any new announcement
+
+    return True
+
+def get_announs(context, soup):
+    new_announs = []
+
+    for td in soup.find_all('td'):
+        new_announs.append(str(td))
+
+    old_announs = []
+
+    # we're doing a couple reading and writing stuff to make old_announs and new_announs same format
+
+    with open("assets/announs.txt", "r") as f:
+        old_announs = f.readlines()
+
+    with open("assets/new_announs.txt", "w") as f:
+        f.writelines(new_announs)
+    
+    with open("assets/new_announs.txt", "r") as f:
+        new_announs = f.readlines()
+
+    # f -> formatted
+    f_old_announs = old_announs[0].split("<td>")
+    f_new_announs = new_announs[0].split("<td>")
+
+    # gives the items that exist in new announs but not exist in old announs
+    new_items = list(set(f_new_announs) - set(f_old_announs))
+
+    
+    # if there is difference
+    if len(new_items) > 0:
+        # make the files same so they won't be different until next announcement
+        with open("assets/announs.txt", "w") as f:
+            f.writelines(new_announs)
+
+        with open("assets/new_announs.txt", "w") as f:
+            f.writelines(new_announs)
+
+        final_text = f"""{len(new_items)} new announcements 📢\n"""
+
+        for item in new_items:
+            get_link_of_item = item.split('"')[1] # getting the href 
+            final_text += get_link_of_item + "\n"
+
+        final_text = final_text.strip()
+        
+        bot.sendMessage(USER_ID, final_text)
+
+def announcements(context):
+    url = "http://w3.bilecik.edu.tr/bilgisayar/tum-duyurular/"
+
+    r = requests.get(url)
+
+    soup = BeautifulSoup(r.content, 'html.parser')
+
+    if check_if_file_exist(context, soup):
+        get_announs(context, soup)
+
+
 # Repeating functions
 def setTimer(update, context):
     try:
@@ -592,6 +667,7 @@ def setTimer(update, context):
 
 
         context.job_queue.run_repeating(checkWatchlist, 3600, context=USER_ID, first=1)    
+        context.job_queue.run_repeating(announcements, 3650, context=USER_ID, first=1)    
         context.job_queue.run_repeating(drinkWater, 1800, context=USER_ID, first=1)    
     except Exception as e:
         print(e)
