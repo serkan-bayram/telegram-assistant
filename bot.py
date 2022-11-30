@@ -74,6 +74,7 @@ def help(update, context):
     -Sends the cafeteria menu automatically.
     -Sends night and morning messages automatically.
     -Sends the lesson schedule automatically.
+    -Sends the new announcements.
     -Checks your watchlist to prevent you from adding too much films.
         """)
     else:
