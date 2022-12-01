@@ -660,7 +660,7 @@ def announcements(context):
 
 
 #---EXPENSES STUFF STARTS---
-def check_day():
+def check_day(context):
     tz = pytz.timezone(timezone)
 
     today = datetime.datetime.now(tz).day
@@ -687,21 +687,20 @@ def check_day():
 def total():
     try:
         if not os.path.exists("assets/expenses.json"):
-            print("There is no entry.")
-            return -1
+            return "There is no entry, ", "Serkan." 
+        else:
+            with open("assets/expenses.json", "r") as f:
+                json_object = json.load(f)
 
-        with open("assets/expenses.json", "r") as f:
-            json_object = json.load(f)
+            total = 0
+            # gets the last object's day to understand
+            # how many days have passed
+            day = json_object["expenses"][-1]["day"]
 
-        total = 0
-        # gets the last object's day to understand
-        # how many days have passed
-        day = json_object["expenses"][-1]["day"]
+            for object in json_object["expenses"]:
+                total+= float(object["expense"])
 
-        for object in json_object["expenses"]:
-            total+= int(object["expense"])
-
-        return total, day
+            return total, day
     except Exception as e:
         print(e)
         bot.sendMessage(USER_ID, f"I'm sorry {name}, I'm afraid I can't do that.")
@@ -710,28 +709,27 @@ def total():
 def show():
     try:
         if not os.path.exists("assets/expenses.json"):
-            print("There is no entry.")
-            return -1
-        
-        with open("assets/expenses.json", "r") as f:
-            json_object = json.load(f)
-        
-        ttl = total()
+            return "There is no entry, ", "Serkan." 
+        else:     
+            with open("assets/expenses.json", "r") as f:
+                json_object = json.load(f)
+            
+            ttl = total()
 
 
-        tz = pytz.timezone(timezone)
+            tz = pytz.timezone(timezone)
 
-        mydate = datetime.datetime.now(tz)
-        month = mydate.strftime("%B")
+            mydate = datetime.datetime.now(tz)
+            month = mydate.strftime("%B")
 
-        text = ""
+            text = ""
 
-        for object in json_object["expenses"]:
-            text += f"{month} {object['day']}: {object['expense']} TL, {object['note']}\n"
+            for object in json_object["expenses"]:
+                text += f"{month} {object['day']}: {object['expense']} TL, {object['note']}\n"
 
-        ttl = f"Total: {ttl[0]}"
+            ttl = f"Total: {ttl[0]}"
 
-        return text, ttl
+            return text, ttl
     except Exception as e:
         print(e)
         bot.sendMessage(USER_ID, f"I'm sorry {name}, I'm afraid I can't do that.")
@@ -744,17 +742,25 @@ def expenses(update, context):
 
             if context.args[0] == "total":
                 ttl, day = total()
-                update.message.reply_text(f"{ttl} TL for {day} days.")  
+                if not ttl == "There is no entry, ":
+                    update.message.reply_text(f"{ttl} TL for {day} days.")
+                else:
+                    update.message.reply_text(ttl + day)  
             elif context.args[0] == "show":
                 text, ttl = show()
-                update.message.reply_text(text, ttl)
+                update.message.reply_text(text + ttl)
             else:
                 inpt = context.args[0:]
+                print(inpt)
 
-                inpt = inpt.split(",")
+                expense = inpt[0]
 
-                expense, note = inpt[0], inpt[1].strip()
+                note = ""
 
+                for n in inpt[1:]:
+                    note += n + " "
+
+                print(expense, note)
  
                 today = datetime.datetime.now(tz).day
 
