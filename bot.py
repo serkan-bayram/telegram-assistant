@@ -10,6 +10,8 @@ import os
 import datetime
 import pytz
 import random
+from datetime import date
+import calendar
 
 # THINGS THAT THIS BOT CAN DO
 # Creating a vocabulary list translating, adding, deleting words, cleaning list, showing words
@@ -66,6 +68,9 @@ def help(update, context):
     /helpvocabulary -> How To Use Vocabulary List
     /helptodo -> How To Use To-Do List
     /weather -> Sends The Weather Stats
+    /expenses 20, egg -> Add 20 TL to your expenses list with a egg note.
+    /expenses show -> Shows the expenses with details.
+    /expenses total -> Shows the total expenses.
 
     -----------------------------------------------
     Other than above:
@@ -651,6 +656,148 @@ def announcements(context):
     if check_if_file_exist(context, soup):
         get_announs(context, soup)
 
+#---ANNOUNCEMENT STUFF ENDS---
+
+
+#---EXPENSES STUFF STARTS---
+def check_day():
+    tz = pytz.timezone(timezone)
+
+    today = datetime.datetime.now(tz).day
+    year = datetime.datetime.now(tz).year
+    month = datetime.datetime.now(tz).month
+    hour = datetime.datetime.now(tz).hour
+    minute = datetime.datetime.now(tz).minute
+
+    mydate = datetime.datetime.now(tz)
+    month_name = mydate.strftime("%B")
+
+    # last day of month
+    last_day = calendar.monthrange(year, month)[1]
+
+    if today == last_day and hour >= 23 and minute >= 25:
+        text, ttl = show()
+
+        with open(f"assets/{month_name}, Expenses.txt", "w") as f:
+            f.write(text+ttl)
+        
+        os.remove("assets/expenses.json")
+
+# returns the total expenses
+def total():
+    try:
+        if not os.path.exists("assets/expenses.json"):
+            print("There is no entry.")
+            return -1
+
+        with open("assets/expenses.json", "r") as f:
+            json_object = json.load(f)
+
+        total = 0
+        # gets the last object's day to understand
+        # how many days have passed
+        day = json_object["expenses"][-1]["day"]
+
+        for object in json_object["expenses"]:
+            total+= int(object["expense"])
+
+        return total, day
+    except Exception as e:
+        print(e)
+        bot.sendMessage(USER_ID, f"I'm sorry {name}, I'm afraid I can't do that.")
+
+# returns the expenses with details
+def show():
+    try:
+        if not os.path.exists("assets/expenses.json"):
+            print("There is no entry.")
+            return -1
+        
+        with open("assets/expenses.json", "r") as f:
+            json_object = json.load(f)
+        
+        ttl = total()
+
+
+        tz = pytz.timezone(timezone)
+
+        mydate = datetime.datetime.now(tz)
+        month = mydate.strftime("%B")
+
+        text = ""
+
+        for object in json_object["expenses"]:
+            text += f"{month} {object['day']}: {object['expense']} TL, {object['note']}\n"
+
+        ttl = f"Total: {ttl[0]}"
+
+        return text, ttl
+    except Exception as e:
+        print(e)
+        bot.sendMessage(USER_ID, f"I'm sorry {name}, I'm afraid I can't do that.")
+
+
+def expenses(update, context):
+    if update.message.from_user["id"] == USER_ID:
+        try:
+            tz = pytz.timezone(timezone)
+
+            if context.args[0] == "total":
+                ttl, day = total()
+                update.message.reply_text(f"{ttl} TL for {day} days.")  
+            elif context.args[0] == "show":
+                text, ttl = show()
+                update.message.reply_text(text, ttl)
+            else:
+                inpt = context.args[0:]
+
+                inpt = inpt.split(",")
+
+                expense, note = inpt[0], inpt[1].strip()
+
+ 
+                today = datetime.datetime.now(tz).day
+
+
+                # if the file hasn't created
+                if not os.path.exists("assets/expenses.json"):
+                    expenses = {
+                        "expenses": [
+                            {
+                                "day": today,
+                                "expense": expense,
+                                "note": note
+                            }
+                        ]
+                    }
+                    
+                    json_string = json.dumps(expenses, indent=4)
+
+                    with open("assets/expenses.json", "w") as f:
+                        f.write(json_string)
+                else:
+                # if the file has created
+                    with open("assets/expenses.json", "r") as f:
+                        json_object = json.load(f)
+
+                    template = {'day': today, 'expense': expense, 'note': note}
+                    
+                    json_object["expenses"].append(template)
+                    
+                    json_string = json.dumps(json_object, indent=4)
+                    
+                    with open("assets/expenses.json", "w") as f:
+                        f.write(json_string)
+
+
+                update.message.reply_text(f"Okay, I added {expense} TL to your expenses.")
+        except Exception as e:
+            print(e)
+            update.message.reply_text(f"I'm sorry {name}, I'm afraid I can't do that.")
+    else:
+        update.message.reply_text("You are not worthy to use this Bot.")
+
+#---EXPENSES STUFF ENDS---
 
 # Repeating functions
 def setTimer(update, context):
@@ -668,7 +815,8 @@ def setTimer(update, context):
 
 
         context.job_queue.run_repeating(checkWatchlist, 3600, context=USER_ID, first=1)    
-        context.job_queue.run_repeating(announcements, 3650, context=USER_ID, first=1)    
+        context.job_queue.run_repeating(announcements, 1810, context=USER_ID, first=1)    
+        context.job_queue.run_repeating(check_day, 1820, context=USER_ID, first=1)    
         context.job_queue.run_repeating(drinkWater, 1800, context=USER_ID, first=1)    
     except Exception as e:
         print(e)
@@ -704,6 +852,7 @@ disp.add_handler(telegram.ext.CommandHandler("addtodo", addTodo))
 disp.add_handler(telegram.ext.CommandHandler("deltodo", delTodo))
 disp.add_handler(telegram.ext.CommandHandler("showtodo", showTodo))
 disp.add_handler(telegram.ext.CommandHandler("cleartodo", clearTodo))
+disp.add_handler(telegram.ext.CommandHandler("expenses", expenses))
 disp.add_handler(telegram.ext.MessageHandler(telegram.ext.Filters.text, handle_message))
 
 updater.start_polling()
