@@ -74,6 +74,7 @@ def help(update, context):
     /help -> This Message
     /menu day -> Sends The Menu Of The Day
     /menu month -> Sends The Menu Of The Month
+    /menu next 2 -> Sends The Menu Of 2 days later.
     /helpvocabulary -> How To Use Vocabulary List
     /helptodo -> How To Use To-Do List
     /weather -> Sends The Weather Stats
