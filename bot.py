@@ -12,6 +12,12 @@ import pytz
 import random
 from datetime import date
 import calendar
+from PIL import Image
+from pytesseract import pytesseract
+import shutil
+import time
+import cv2
+import numpy as np
 
 # THINGS THAT THIS BOT CAN DO
 # Creating a vocabulary list translating, adding, deleting words, cleaning list, showing words
@@ -38,6 +44,9 @@ bot = telepot.Bot(TOKEN)
 # You need User Id to make bot personal
 with open("user_id.txt", "r") as f:
     USER_ID = int(f.read())
+
+with open("group_id.txt", "r") as f:
+    GROUP_ID = int(f.read())
 
 # Your timezone
 timezone = 'Europe/Istanbul'
@@ -111,6 +120,7 @@ def send_daily_menu(context):
             
     img = img["src"]
     bot.sendPhoto(USER_ID, img)
+    bot.sendPhoto(GROUP_ID, img)
 
 # A function to ask menu with /menu day or /menu month
 def menu(update, context):
@@ -120,7 +130,8 @@ def menu(update, context):
                 # Checking the type of menu: Day or Month
                 if context.args[0] == "day":
                     send_daily_menu(context)
-
+                elif context.args[0] == "next":
+                    send_menu_via_monthly_menu(context.args[1])
                 # Searching the pdf
                 elif context.args[0] == "month":
                     pTags = get_information_for_menu()
@@ -144,19 +155,102 @@ def menu(update, context):
                         doc = fitz.open(pdffile)
                         page = doc.load_page(0)  # Number of page
                         pix = page.get_pixmap()
-                        output = "assets/foodmenu.png"
+                        output = "assets/foodmenu.jpg"
                         pix.save(output)
                     elif ".png" in pdf:
-                        with open("assets/foodmenu.png", "wb") as f:
+                        with open("assets/foodmenu.jpg", "wb") as f:
                             f.write(response.content)                                          
                     
-                    bot.sendPhoto(USER_ID, photo=open('assets/foodmenu.png', 'rb'))
+                    bot.sendPhoto(USER_ID, photo=open('assets/foodmenu.jpg', 'rb'))
+                    bot.sendPhoto(GROUP_ID, photo=open('assets/foodmenu.jpg', 'rb'))
             except Exception as e:
                 print(e)
                 update.message.reply_text(f"I'm sorry {name}, I'm afraid I can't do that.")
                 # Todo: If there isn't any photo scrape headings
     else:
         update.message.reply_text("You are not worthy to use this Bot.")
+
+# Sending the next day's menu via monthly menu
+def make_original_better():
+# make original image better by cropping the sides
+    with Image.open("assets/foodmenu.jpg") as image:
+        newsize = (842, 596)
+        image = image.resize(newsize)
+        
+        area = (35, 95, 155*5, 550)
+        image = image.crop(area)
+
+        image.save("assets/better_original_image.jpg")
+
+def create_cells():
+    # I found these numbers by trying
+    # Cropping coordinats
+    tops = [0, 81, 162, 269, 359]
+    bottoms = [84, 164, 272, 361, 459]
+
+    # Creating cells by cropping photo
+    j = 0
+    for x in range(0, 5):
+        for i in range(1, 6):
+            with Image.open("assets/better_original_image.jpg") as image:
+                
+                #       left    top     right   bottom
+                area = (147*j, tops[x], 147*i, bottoms[x])
+                image = image.crop(area)
+
+                # defining names by dates
+                date = recognition(image)
+                
+                image.save(f"assets/cells/{date}-.jpg")
+                j+=1
+        j = 0
+    
+    os.remove("assets/cells/cropped.jpg")
+
+
+def recognition(img):
+    # cropping the date part so it can recognize it easily           
+    area = (10, 0, 130, 15)
+    img = img.crop(area)
+
+    img.save("assets/cells/cropped.jpg")
+
+    # making image more readible
+    image = cv2.imread('assets/cells/cropped.jpg')
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    date = pytesseract.image_to_string(gray, lang='tur')
+    
+    return date.strip()
+
+# Since there aren't much photo and recognition
+# I'm gonna make all of the functions work daily
+# Instead of tons of checking 
+def send_menu_via_monthly_menu(context):
+    if os.path.exists("assets/cells"):
+        shutil.rmtree('assets/cells')
+
+    if not os.path.exists("assets/cells"):
+        os.mkdir("assets/cells")
+    
+    make_original_better()
+
+    create_cells()
+
+    files = os.listdir("assets/cells")
+
+    tz = pytz.timezone("Europe/Istanbul")
+
+    # getting next day
+    next_day = (datetime.datetime.now(tz) + datetime.timedelta(days=int(context))).strftime("%d.%m.%Y")
+
+    # finding the right picture
+    for file in files:
+        print(file[:-5], next_day)
+        if file[:-5] == next_day:
+            bot.sendPhoto(USER_ID, photo=open(f'assets/cells/{file}', 'rb'))
+            bot.sendPhoto(GROUP_ID, photo=open(f'assets/cells/{file}', 'rb'))
+            
 
 #---VOCABULARY STUFF STARTS---
 def helpVocabulary(update, context):
@@ -551,6 +645,7 @@ def sendLessonSchedule(context):
                 schedule += lesson + "\n"
 
     bot.sendMessage(USER_ID, schedule)
+    bot.sendMessage(GROUP_ID, schedule)
 
 # Two functions to send morning and night messages
 # Can be improved
@@ -645,6 +740,8 @@ def get_announs(context, soup):
         final_text = final_text.strip()
         
         bot.sendMessage(USER_ID, final_text)
+        bot.sendMessage(GROUP_ID, final_text)
+        
 
 def announcements(context):
     url = "http://w3.bilecik.edu.tr/bilgisayar/tum-duyurular/"
@@ -813,6 +910,7 @@ def setTimer(update, context):
         context.job_queue.run_daily(weather_daily, context=USER_ID, days=(0, 1, 2, 3, 4, 5, 6), time=datetime.time(hour=6, minute=5, second=00, tzinfo=pytz.timezone(timezone)))
         # Cafeteria menu
         context.job_queue.run_daily(send_daily_menu, context=USER_ID, days=(0, 1, 2, 3, 4), time=datetime.time(hour=11, minute=00, second=00, tzinfo=pytz.timezone(timezone)))
+        context.job_queue.run_daily(send_menu_via_monthly_menu, context=USER_ID, days=(0, 1, 2, 3, 6), time=datetime.time(hour=17, minute=00, second=00, tzinfo=pytz.timezone(timezone)))
         # Lesson schedule
         context.job_queue.run_daily(sendLessonSchedule, context=USER_ID, days=(0, 1, 2, 3, 6), time=datetime.time(hour=21, minute=00, second=30, tzinfo=pytz.timezone(timezone)))
         # Morning and night messages
@@ -830,10 +928,9 @@ def setTimer(update, context):
 
 # You can modify here like what you want
 def handle_message(update, context):
-    if update.message.from_user["id"] == USER_ID:
-        pass
-    else:
-        update.message.reply_text("You are not worthy to use this Bot.")
+    user = update.message.from_user
+    
+    print(user, update.message.chat)
 
 
 updater = telegram.ext.Updater(TOKEN, use_context=True)
