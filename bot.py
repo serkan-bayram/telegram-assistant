@@ -81,6 +81,7 @@ def help(update, context):
     /expenses 20, egg -> Add 20 TL to your expenses list with a egg note.
     /expenses show -> Shows the expenses with details.
     /expenses total -> Shows the total expenses.
+    /expenses remove -> Deletes the expenses.
 
     -----------------------------------------------
     Other than above:
@@ -848,7 +849,7 @@ def expenses(update, context):
                 text, ttl = show()
                 update.message.reply_text(text + ttl)
             elif context.args[0] == "remove":
-                shutil.rmtree('assets/expenses.json')
+                os.remove('assets/expenses.json')
             else:
                 inpt = context.args[0:]
                 print(inpt)
