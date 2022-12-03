@@ -847,6 +847,8 @@ def expenses(update, context):
             elif context.args[0] == "show":
                 text, ttl = show()
                 update.message.reply_text(text + ttl)
+            elif context.args[0] == "remove":
+                shutil.rmtree('assets/expenses.json')
             else:
                 inpt = context.args[0:]
                 print(inpt)
