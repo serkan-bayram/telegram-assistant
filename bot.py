@@ -967,7 +967,6 @@ updater = telegram.ext.Updater(TOKEN, use_context=True)
 disp = updater.dispatcher
 
 # Starting timers
-# I'm not pretty sure about the parameters
 set_timer(disp, updater)
 
 # Adding commands to the dispatcher
