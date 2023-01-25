@@ -1,6 +1,6 @@
 
-key.txt
-token.txt
+openapi_key.txt
+telegram_token.txt
 user_id.txt
 env
 group_id.txt
